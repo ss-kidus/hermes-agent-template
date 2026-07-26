@@ -1,6 +1,16 @@
 #!/bin/bash
 set -e
 
+# --- BACKBLAZE SYNC SETUP ---
+echo "Restoring Hermes data from Backblaze B2..."
+# Pulls saved data into the container (|| true prevents crash if bucket is completely empty on first run)
+rclone copy myremote:YOUR_BUCKET_NAME /data || true
+
+echo "Starting 5-minute background sync to Backblaze..."
+# Starts silent timer that pushes changes to B2 every 5 minutes
+(while true; do sleep 300; rclone sync /data myremote:YOUR_BUCKET_NAME || true; done) &
+# ----------------------------
+
 # Mirror dashboard-ref-only's startup: create every directory hermes expects
 # and seed a default config.yaml if the volume is empty. Without these,
 # `hermes dashboard` endpoints that hit logs/, sessions/, cron/, etc. can fail
